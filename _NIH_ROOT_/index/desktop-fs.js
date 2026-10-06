@@ -1746,6 +1746,8 @@ function dfsBuildIconMenuItems(node, opts = {}) {
       if ((node.mime || "").indexOf("image/") === 0) items.push({ label: "미리보기(새 탭)", action: () => dfsActivateBinaryFile(node) });
     } else {
       items.push({ label: "에디터로 열기", action: () => dfsOpenFileInWindow(node) });
+      // 요청: html 파일은 바탕화면 아이콘 메뉴에서도 "팝업으로 열기"(앱 안 창, context-menu.js의 dfsOpenHtmlNodeAsPopup).
+      if (isHtml(node.name)) items.push({ label: "팝업으로 열기", action: () => dfsOpenHtmlNodeAsPopup(node) });
     }
     // 실제 탐색기 파일 메뉴와 순서를 맞춘다: 다운로드(웹훅으로 로컬 헬퍼가 저장) 다음
     // 브라우저에서 다운로드(강제 blob 다운로드).

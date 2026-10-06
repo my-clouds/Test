@@ -257,6 +257,9 @@ function buildFileMenuItems(it) {
   // 예전엔 html 전용이었다(사용자 지시로 일반화됨). 요청 #142로 더블클릭 기본값 자체는 "helper"로
   // 바뀌었지만, 이 우클릭 메뉴 항목은 기본값과 무관하게 항상 표시된다.
   items.push({ label: "새 탭에서 열기", action: () => viewAsHostedPage(it) });
+  // 요청: html 파일은 "팝업으로 열기"도 - 시작 메뉴 등의 팝업 항목과 같은 앱 안 창(가짜 팝업)으로 먼저 열고,
+  // 진짜 브라우저 창이 필요하면 그 창 위쪽의 "새 창으로 열기"를 누른다. 주소는 "새 탭에서 열기"와 같은 이 사이트의 실제 경로.
+  if (isHtml(it.name)) items.push({ label: "팝업으로 열기", action: () => dfOpenHtmlPopup(it.name, it.path.map(encodeURIComponent).join("/")) });
   // 열기/다운로드는 이 사이트에서는 항상 로컬 프로그램(webhook)을 통해서만 가능하므로
   // 굳이 "로컬 프로그램으로"라고 설명을 덧붙이지 않는다.
   items.push({ label: "열기", action: () => localHelperOpen(it) });
@@ -367,6 +370,16 @@ function dfsRecycleBinItemMenuItems(it) {
     } }
   ];
 }
+// html 파일을 앱 안 창(가짜 팝업)으로 연다 - 저장소 파일(실제 주소)과 바탕화면 가상 파일(blob: 주소) 공용.
+function dfOpenHtmlPopup(name, url) {
+  return dfOpenPopupInApp({ name: name, url: url, iconHtml: resolveFileIcon(name, 16, null) }, 1000, 700);
+}
+// 바탕화면(가상 파일시스템)의 html 파일 - 내용으로 blob: 주소를 만들어 연다(스크립트도 실행된다).
+function dfsOpenHtmlNodeAsPopup(node) {
+  const url = node.fileType === "html" ? dfsNodeBlobUrl(node)
+    : URL.createObjectURL(new Blob([node.content || ""], { type: "text/html;charset=utf-8" }));
+  return dfOpenHtmlPopup(node.name, url);
+}
 function dfsDesktopFileMenuItems(it) {
   const refresh = () => dfsBroadcastChange();
   const node = it.dfsNode;
@@ -410,6 +423,7 @@ function dfsDesktopFileMenuItems(it) {
   // 웹페이지처럼 스크립트도 실행되는 새 탭으로 바로 볼 수 있게 한다(blob: URL 뷰어).
   if (!node.binary && it.type === "html") {
     fileItems.push({ label: "새 탭에서 보기(뷰어)", action: () => dfsOpenHtmlAsViewerTab(node) });
+    fileItems.push({ label: "팝업으로 열기", action: () => dfsOpenHtmlNodeAsPopup(node) });
   }
   fileItems.push(
     // 실제 탐색기 파일 메뉴와 순서를 맞춘다: 다운로드(웹훅으로 로컬 헬퍼가 저장) 다음

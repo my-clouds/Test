@@ -16,7 +16,10 @@
     {
       "name": "Ent",
       "url": "_NIH_ROOT_/tools/Ent.html",
-      "icon": ""
+      "icon": "",
+      "popup": true,
+      "width": 900,
+      "height": 640
     },
     {
       "name": "URL Locker",

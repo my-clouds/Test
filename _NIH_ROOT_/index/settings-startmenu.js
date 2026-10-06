@@ -867,7 +867,7 @@ function dfOpenPopupInApp(item, w, h) {
   try { url = new URL(item.url, location.href).href; } catch (e) {}
   const handle = dfCreateAppWindow({
     title: item.name || url,
-    icon: item.icon ? `<img src="${escapeHtml(resolveIconSrc(item.icon))}" style="width:16px;height:16px;object-fit:contain;" alt="">` : "\u{1F310}",
+    icon: item.iconHtml ? item.iconHtml : item.icon ? `<img src="${escapeHtml(resolveIconSrc(item.icon))}" style="width:16px;height:16px;object-fit:contain;" alt="">` : "\u{1F310}",
     width: w,
     height: h + 70, // 타이틀바 + 주소 줄만큼 더해서 안쪽 화면이 설정한 크기가 되게
     bodyHtml:
