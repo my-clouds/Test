@@ -860,6 +860,35 @@ async function dfOpenInternalPath(p, notFound, onRepoFile) {
     notFound();
   }
 }
+// 팝업 항목을 앱 안 창으로 연다(전체화면 유지용 - 위 activateExternalItem 참고). 프레임 안에 넣는 것을 거부하는
+// 사이트는 빈 화면으로 나올 수 있어서, 위쪽 줄에 "새 창으로 열기"(진짜 팝업 - 이때는 브라우저가 전체화면을 푼다)를 둔다.
+function dfOpenPopupInApp(item, w, h) {
+  let url = item.url;
+  try { url = new URL(item.url, location.href).href; } catch (e) {}
+  const handle = dfCreateAppWindow({
+    title: item.name || url,
+    icon: item.icon ? `<img src="${escapeHtml(resolveIconSrc(item.icon))}" style="width:16px;height:16px;object-fit:contain;" alt="">` : "\u{1F310}",
+    width: w,
+    height: h + 70, // 타이틀바 + 주소 줄만큼 더해서 안쪽 화면이 설정한 크기가 되게
+    bodyHtml:
+      '<div style="flex:0 0 auto;display:flex;gap:8px;align-items:center;padding:3px 8px;font-size:11.5px;background:rgba(0,0,0,.06);">' +
+        `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.7;">${escapeHtml(url)}</span>` +
+        '<button class="settings-button settings-button-neutral df-frame-out" title="화면이 비어 보이면(프레임을 거부하는 사이트) 진짜 새 창으로 엽니다 - 브라우저가 전체화면을 풉니다">새 창으로 열기</button>' +
+      '</div>' +
+      '<iframe style="flex:1;min-height:0;width:100%;border:0;background:#fff;" allow="clipboard-read; clipboard-write; fullscreen"></iframe>'
+  });
+  const frame = handle.bodyEl.querySelector("iframe");
+  frame.src = url;
+  handle.bodyEl.querySelector(".df-frame-out").onclick = () => { handle.close(); activateExternalItem(item, "realpopup"); };
+  // 창을 끌거나 크기를 바꾸는 동안 마우스가 iframe 위로 지나가면 움직임이 끊긴다 - 그동안만 iframe이 마우스를 못 받게 한다.
+  handle.el.addEventListener("mousedown", (e) => {
+    if (e.target === frame) return;
+    frame.style.pointerEvents = "none";
+    const restore = () => { frame.style.pointerEvents = ""; window.removeEventListener("mouseup", restore, true); };
+    window.addEventListener("mouseup", restore, true);
+  }, true);
+  return handle;
+}
 function activateExternalItem(item, mode) {
   if (!item || !item.url) return;
   // 요청: 주소가 "#툴박스"처럼 플래그먼트뿐이거나 이 페이지 자신의 주소 + 플래그먼트면 새 탭을 띄우지 않고
@@ -883,10 +912,15 @@ function activateExternalItem(item, mode) {
       return;
     }
   }
-  const asPopup = mode ? mode === "popup" : !!item.popup;
+  const asPopup = mode ? (mode === "popup" || mode === "realpopup") : !!item.popup;
   if (asPopup) {
     const w = item.width || 900;
     const h = item.height || 640;
+    // 요청: "팝업으로 설정되면 절대 전체화면을 해제하지 마라." 이 앱은 팝업을 열 때 전체화면을 풀지 않지만(코드에
+    // 그런 호출이 없다), 브라우저가 새 창이 뜨는 순간 스스로 전체화면을 풀어버리고 이건 페이지에서 막을 수 없다.
+    // 그래서 전체화면인 동안에는 브라우저 창을 새로 띄우지 않고, 같은 크기의 앱 안 창(iframe)으로 연다 - 브라우저
+    // 창이 생기지 않으니 전체화면이 풀릴 일이 없다. 전체화면이 아닐 때는 예전처럼 진짜 팝업 창으로 연다.
+    if (dfIsFullscreen() && mode !== "realpopup") { dfOpenPopupInApp(item, w, h); return; }
     const left = Math.round(((window.screen.width || 1280) - w) / 2);
     const top = Math.round(((window.screen.height || 800) - h) / 2);
     dfOpenNewTab(item.url, "_blank", `popup=yes,width=${w},height=${h},left=${left},top=${top}`);
