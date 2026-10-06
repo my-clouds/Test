@@ -46,9 +46,19 @@
           "height": 640
         }
       ]
+    },
+    {
+      "name": "툴박스",
+      "url": "#툴박스",
+      "icon": ""
     }
   ],
   "tray": [
+    {
+      "name": "툴박스",
+      "url": "#툴박스",
+      "icon": ""
+    },
     {
       "name": "AutoHotkey",
       "url": "https://www.autohotkey.com/download/ahk-v2.exe",
