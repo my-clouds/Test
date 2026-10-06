@@ -136,6 +136,13 @@ function unb64(s){
   return u8;
 }
 
+/* 정규 Base64URL(패딩 없음, 남는 비트 0)일 때만 바이트 길이를 돌려주고, 아니면 -1 */
+function b64len(s){
+  if (!/^[A-Za-z0-9_-]+$/.test(s)) return -1;
+  try { const u = unb64(s); return b64(u) === s ? u.length : -1; } catch { return -1; }
+}
+const isEnt = str => { try { parseEnt(str); return true; } catch { return false; } };
+
 /* ---------- 압축 ---------- */
 async function pipe(bytes, stream){
   const out = new Blob([bytes]).stream().pipeThrough(stream);
@@ -174,10 +181,14 @@ function parseEnt(str){
   const [, , mS, tS, nS, zS, saltS, ivS, ctS] = p;
   const m = Number(mS), t = Number(tS);
   const n = nS === "-" ? null : Number(nS);          // null = 칸 수 숨김
-  const ok = Number.isInteger(m) && m >= 8 && m <= MAX_MEM_KB
-          && Number.isInteger(t) && t >= 1 && t <= MAX_T
-          && (n === null || (Number.isInteger(n) && n >= 1 && n <= MAX_N))
-          && (zS === "0" || zS === "1");
+  const num = /^[1-9]\d*$/;                            // 숫자 칸은 앞자리 0 없는 10진수만
+  const ok = num.test(mS) && m >= 8 && m <= MAX_MEM_KB
+          && num.test(tS) && t >= 1 && t <= MAX_T
+          && (n === null || (num.test(nS) && n >= 1 && n <= MAX_N))
+          && (zS === "0" || zS === "1")
+          && b64len(saltS) === 16                      // salt 16바이트
+          && b64len(ivS) === 12                        // AES-GCM iv 12바이트
+          && b64len(ctS) >= 16;                        // 암호문은 최소 GCM 태그 16바이트
   if (!ok) throw new Error("format");
   return { m, t, n, zip: zS === "1", saltS, ivS, ctS, head: p.slice(0, 8).join(":") };
 }
@@ -364,6 +375,7 @@ $("copy").onclick = async () => {
 $("save").onclick = () => {
   const v = $("io").value;
   if (!v) return status("저장할 내용이 없습니다.", "err");
+  if (!isEnt(v)) return status("ENT 형식이 아니라서 저장하지 않았습니다. 먼저 암호화하세요.", "err");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([v], { type:"text/plain" }));
   a.download = "data.ent";
@@ -376,8 +388,10 @@ $("open").onclick = () => $("file").click();
 $("file").onchange = async e => {
   const f = e.target.files[0];
   if (!f) return;
-  $("io").value = (await f.text()).trim();
+  const v = (await f.text()).trim();
   e.target.value = "";
+  if (!isEnt(v)) return status(f.name + " 파일은 ENT 형식이 아니라서 열지 않았습니다.", "err");
+  $("io").value = v;
   if (!syncFieldsFromEnt()) status(f.name + " 파일을 불러왔습니다.", "ok");
 };
 
