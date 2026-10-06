@@ -805,7 +805,11 @@ function makeAppIcon(item, className) {
   } else {
     // 아이콘을 지정하지 않았어도 주소가 이 페이지의 플래그먼트(#폴더/파일)면 그 대상의 아이콘을 자동으로 쓴다.
     const auto = item.url ? dfSamePageLinkIcon(item.url, 20) : null;
+    // 요청: 시작 메뉴(와 트레이)도 툴박스/바탕 화면처럼 확장자별 아이콘을 쓴다 - 이름이나 주소의 파일명에 확장자가
+    // 있으면(예: URL-Locker.html, tool.exe) 그 확장자의 아이콘, 없으면(일반 사이트 주소 등) 예전처럼 이름 첫 글자.
+    const fileName = toolboxIconNameFor(item.name || "", item.url || "");
     if (auto) wrap.innerHTML = auto;
+    else if (item.url && /\.(?=[A-Za-z0-9_]*[A-Za-z])[A-Za-z0-9_]{1,8}$/.test(fileName)) wrap.innerHTML = resolveFileIcon(fileName, 20, null);
     else wrap.textContent = (item.name || "?").charAt(0).toUpperCase();
   }
   return wrap;

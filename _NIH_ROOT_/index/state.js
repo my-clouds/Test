@@ -462,8 +462,9 @@ function toolboxIconInner(it, size) {
 // 이름에 확장자가 없으면(예: 기본 이름 "새 항목") 주소의 마지막 조각(파일명)으로 확장자 아이콘을 고른다.
 function toolboxIconNameFor(name, url) {
   if (/\.[A-Za-z0-9_]{1,8}$/.test(name || "")) return name;
+  // 주소의 "경로" 마지막 조각만 본다 - 그냥 "/"로 자르면 https://example.com 의 ".com"을 확장자로 잘못 본다.
   let last = "";
-  try { last = decodeURIComponent(String(url || "").split(/[?#]/)[0].split("/").filter(Boolean).pop() || ""); } catch (e) {}
+  try { last = decodeURIComponent(new URL(String(url || ""), location.href).pathname.split("/").filter(Boolean).pop() || ""); } catch (e) {}
   return /\.[A-Za-z0-9_]{1,8}$/.test(last) ? last : name;
 }
 function toolboxIconGlyphFor(it, size) {

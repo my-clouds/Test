@@ -88,7 +88,7 @@ function dfsBuildMenuMakerBodyHtml() {
       <div class="mm-top">
         <span class="mm-title">메뉴 메이커</span>
         <div class="mm-tabs" id="mmTabs">
-          <button class="mm-tab" data-tab="menu">메뉴</button>
+          <button class="mm-tab" data-tab="menu">시작 메뉴</button>
           <button class="mm-tab" data-tab="icon">아이콘</button>
           <button class="mm-tab" data-tab="sound">사운드</button>
           <button class="mm-tab" data-tab="ext">확장자</button>
@@ -235,7 +235,7 @@ function dfInitMenuMakerWindow(handle, initialData, state, initialTab) {
   // 요청 #158: "로컬 미리보기 초기화" 버튼 제거 - 가져오기(#149로 로컬/웹 분리됨)가 이미 원하는
   // 내용으로 덮어써서 사실상 같은 결과를 내므로 중복이라는 지적에 따라 없앤다.
 
-  function tabLabel(t) { return t === "menu" ? "메뉴" : t === "icon" ? "아이콘" : t === "sound" ? "사운드" : t === "ext" ? "확장자" : t === "desktop" ? "바탕 화면" : "툴박스"; }
+  function tabLabel(t) { return t === "menu" ? "시작 메뉴" : t === "icon" ? "아이콘" : t === "sound" ? "사운드" : t === "ext" ? "확장자" : t === "desktop" ? "바탕 화면" : "툴박스"; }
   function tabFileName(t) { return t === "menu" ? "menu_set.json" : t === "icon" ? "icon_set.json" : t === "sound" ? "sound_set.json" : t === "ext" ? "extension_run_set.json" : t === "desktop" ? "desktop_set.json" : "toolbox_set.json"; }
   // 요청: "URL에서 가져오기를 누르면 항상 그 탭이 참조하는 기본 json 주소가 미리 입력돼 있어야
   // 한다(템플릿처럼)." - settings-startmenu.js에 정의된 실제 경로 상수(MENU_SET_JSON_PATH 등,
