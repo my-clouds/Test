@@ -831,7 +831,7 @@ function dfShowExplorerAtHash(hash) {
      - 파일: 탐색기는 건드리지 않고 그 파일만 더블클릭한 것처럼 연다(뷰어/플레이어/에디터 등)
      - 어느 쪽인지 목록에서 못 찾음: notFound()에 맡긴다
    폴더/파일 구분은 부모 폴더 목록에서 찾는다(파일 경로를 폴더로 읽어보려다 실패하는 헛요청을 하지 않는다). */
-async function dfOpenInternalPath(p, notFound) {
+async function dfOpenInternalPath(p, notFound, onRepoFile) {
   const asFolder = () => dfShowExplorerAtHash("#" + pathToHash(p));
   if (p.length === 0 || (p.length === 1 && (isDfsPath(p) || isToolboxPath(p)))) { asFolder(); return; }
   const name = p[p.length - 1];
@@ -851,6 +851,9 @@ async function dfOpenInternalPath(p, notFound) {
       const selfHash = dfSamePageDeepLinkHash(f.toolboxNode.url);
       if (selfHash != null && (hashToPath(selfHash) || []).join("/") === p.join("/")) return;
     }
+    // 팝업으로 설정된 항목이 저장소의 평범한 파일을 가리키면, 더블클릭 동작(대개 새 탭 - 전체화면이 풀린다)으로
+    // 넘기지 않고 호출한 쪽이 그 파일 주소를 팝업으로 열게 한다.
+    if (onRepoFile && !f.dfsNode && !f.toolboxNode) { onRepoFile(p.map(encodeURIComponent).join("/")); return; }
     // content-pane.js가 파일 칸에 만드는 것과 같은 모양 - activate()가 실제 더블클릭과 똑같이 판단한다.
     activate({ name: f.name, size: f.size, crc32: f.crc32, path: p, type: fileTypeFor(f.name), dfsNode: f.dfsNode, toolboxNode: f.toolboxNode });
   } catch (e) {
@@ -863,16 +866,20 @@ function activateExternalItem(item, mode) {
   // 지금 탐색기(드라이브) 창에서 그 위치를 연다 - 폴더면 이동, 파일이면 더블클릭한 것처럼 연다
   // (bootstrap.js의 dfApplyHashNavigation). 우클릭 메뉴에서 "새 탭/팝업으로 열기"를 직접 고른 경우(mode)는 그대로 둔다.
   if (!mode) {
+    // 버그 리포트: 팝업으로 설정한 항목인데도 전체화면이 풀렸다 - 항목이 저장소 안의 파일을 가리키면 아래의
+    // "드라이브에서 열기"가 팝업 설정을 무시하고 그 파일의 더블클릭 동작(새 탭 열기 = 전체화면 해제)으로 넘겨
+    // 버리고 있었다. 팝업 항목이면 파일은 항상 팝업으로 연다(팝업은 전체화면을 풀지 않는다). 폴더는 그대로 탐색기.
+    const asPopupFile = item.popup ? (fileUrl) => activateExternalItem(Object.assign({}, item, { url: fileUrl }), "popup") : null;
     const hash = dfSamePageDeepLinkHash(item.url);
     if (hash != null) {
-      dfOpenInternalPath(hashToPath(hash) || [], () => dfShowExplorerAtHash(hash));
+      dfOpenInternalPath(hashToPath(hash) || [], () => dfShowExplorerAtHash(hash), asPopupFile);
       return;
     }
     // 저장소 안의 파일/폴더를 상대 경로로 적은 주소(예: "VishwaJai - Eastern Arctic Dubstep.mp3")도 탐색기에 실제로
     // 있는 항목이면 같은 방식으로 연다. 목록에 없으면(색인에 안 실린 파일 등) 예전처럼 새 탭/팝업.
     const repoPath = dfRepoPathFromUrl(item.url);
     if (repoPath) {
-      dfOpenInternalPath(repoPath, () => activateExternalItem(item, item.popup ? "popup" : "tab"));
+      dfOpenInternalPath(repoPath, () => activateExternalItem(item, item.popup ? "popup" : "tab"), item.popup ? () => activateExternalItem(item, "popup") : null);
       return;
     }
   }
