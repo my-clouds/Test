@@ -129,7 +129,7 @@ function ensureJSZip() {
 // openShortcutUrl과 같은 크기의 작은 별도 창으로 연다.
 async function viewOnPages(it, popup) {
   const url = await githubRawUrl(it);
-  if (popup) dfOpenNewTab(url, "_blank", "width=1000,height=700,resizable=yes,scrollbars=yes,noopener");
+  if (popup) dfOpenRawPopup(it.name, url); // 가짜 팝업(앱 안 창)으로 먼저 연다 - context-menu.js
   else dfOpenNewTab(url, "_blank", "noopener,noreferrer");
 }
 // "GitHub에서 다운로드" - 단순 링크 이동이 아니라 fetch로 받아서 blob으로 강제 저장한다.
@@ -727,7 +727,6 @@ function dfClearLocalOverride(key) {
 let dfFsIntentionalExit = false; // 우리가(새 탭을 열려고) 지금 exitFullscreen()을 부르는 중인지
 let dfFsWantReenter = false;     // 그 탭에서 돌아오면 다시 전체화면으로 들어가야 하는지
 let dfFsUserOptedOut = false;    // 사용자가 직접 전체화면을 뺐으면(그 뒤로 이 세션에서는 자동으로 안 넣음)
-let dfFsPopupUntil = 0;          // 이 시각 전의 전체화면 해제는 방금 연 팝업 때문(브라우저가 강제로 푼 것)으로 본다
 let dfFsArmedForClick = false;   // 다음 클릭에 전체화면 요청을 걸어둔 상태인지(중복 등록 방지)
 function dfIsFullscreen() { return !!document.fullscreenElement; }
 function dfRequestFullscreenQuiet() {
@@ -766,11 +765,6 @@ function dfExitFullscreenForNewTab() {
 function dfOpenNewTab(url, target, features) {
   const isPopup = typeof features === "string" && /(^|,)\s*(width|height)\s*=/.test(features);
   if (!isPopup && !settings.keepFullscreenOnNewTab) dfExitFullscreenForNewTab();
-  // 요청: 팝업으로 설정된 항목(시작 메뉴/툴박스/바탕 화면)은 전체화면을 유지해야 한다. 이 앱은 팝업을 열 때
-  // 전체화면을 풀지 않지만, 브라우저가 보안상 새 창이 뜨는 순간 스스로 전체화면을 풀어버린다(막을 방법 없음).
-  // 그걸 "사용자가 직접 푼 것"으로 잘못 기록해서 다시는 자동으로 안 들어가던 게 문제였다 - 팝업을 연 직후의
-  // 해제는 따로 표시해 두고(dfFsPopupUntil), fullscreenchange에서 곧바로 다시 전체화면으로 되돌린다.
-  if (isPopup && dfIsFullscreen()) dfFsPopupUntil = Date.now() + 3000;
   return window.open(url, target, features);
 }
 // 버그 리포트: "바탕화면의 레포 바로가기를 더블클릭하면 새 탭이 열리고, 그마저도 폴더나 파일이
@@ -819,23 +813,10 @@ function dfSetupFullscreenAutoManagement() {
     if (dfFsIntentionalExit) {
       dfFsIntentionalExit = false;
       dfFsWantReenter = true;
-    } else if (Date.now() < dfFsPopupUntil) {
-      // 팝업을 열자마자 브라우저가 푼 경우 - 사용자가 푼 게 아니므로 바로 다시 들어간다. 브라우저가 이 시점의
-      // 요청을 거절하면(사용자 동작이 아니라고 볼 때) 이 창으로 돌아와 처음 클릭/포커스할 때 다시 들어간다.
-      dfFsPopupUntil = 0;
-      dfFsWantReenter = true;
-      dfRequestFullscreenQuiet();
-      dfArmFullscreenOnNextClick();
     } else {
       dfFsUserOptedOut = true;
       dfFsWantReenter = false;
     }
-  });
-  // 팝업은 탭 전환이 아니라서 visibilitychange가 오지 않는다 - 이 창이 다시 포커스를 받을 때도 같은 복귀를 시도한다.
-  window.addEventListener("focus", () => {
-    if (!settings.fullscreenOnLoad || dfFsUserOptedOut || !dfFsWantReenter || dfIsFullscreen()) return;
-    dfRequestFullscreenQuiet();
-    dfArmFullscreenOnNextClick();
   });
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState !== "visible") return;

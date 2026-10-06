@@ -1746,9 +1746,9 @@ function dfsBuildIconMenuItems(node, opts = {}) {
       if ((node.mime || "").indexOf("image/") === 0) items.push({ label: "미리보기(새 탭)", action: () => dfsActivateBinaryFile(node) });
     } else {
       items.push({ label: "에디터로 열기", action: () => dfsOpenFileInWindow(node) });
-      // 요청: html 파일은 바탕화면 아이콘 메뉴에서도 "팝업으로 열기"(앱 안 창, context-menu.js의 dfsOpenHtmlNodeAsPopup).
-      if (isHtml(node.name)) items.push({ label: "팝업으로 열기", action: () => dfsOpenHtmlNodeAsPopup(node) });
     }
+    // 요청: 모든 파일에 "팝업으로 열기"(앱 안 창, context-menu.js의 dfsOpenHtmlNodeAsPopup).
+    items.push({ label: "팝업으로 열기", action: () => dfsOpenHtmlNodeAsPopup(node) });
     // 실제 탐색기 파일 메뉴와 순서를 맞춘다: 다운로드(웹훅으로 로컬 헬퍼가 저장) 다음
     // 브라우저에서 다운로드(강제 blob 다운로드).
     items.push({ label: "다운로드", action: () => localHelperSaveContent(node.name, node.binary ? node.blob : (node.content || "")) });
@@ -1971,7 +1971,8 @@ function dfsRunExtensionActionForDesktopNode(action, node) {
     case "popup":
       // blob: 주소는 noopener를 주면 일부 브라우저에서 새 탭이 못 여는 경우가 있어(editor.js/
       // dfsOpenHtmlAsViewerTab과 같은 이유) 여기서는 noopener 없이 연다.
-      dfOpenNewTab(dfsNodeBlobUrl(node), "_blank", "width=1000,height=700,resizable=yes,scrollbars=yes");
+      // 요청: 확장자별 더블클릭 "팝업으로 열기"도 기본은 가짜 팝업(앱 안 창)이다.
+      dfsOpenHtmlNodeAsPopup(node);
       return;
     // "text"(텍스트로 열기)/"newtab"(새 탭에서 열기)/"repo"(저장소에서 보기)는 전부 실제
     // 저장소 주소가 있어야 뜻이 통하는데, 바탕화면 가상 파일은 그런 주소가 없다 - 가장 가까운

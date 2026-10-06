@@ -374,7 +374,9 @@ function viewAsHostedPage(it, popup) {
   } else {
     url = path.map(encodeURIComponent).join("/");
   }
-  if (popup) dfOpenNewTab(url, "_blank", "width=1000,height=700,resizable=yes,scrollbars=yes,noopener");
+  // 요청: 팝업은 기본이 가짜 팝업(앱 안 창) - 우클릭의 "팝업으로 열기"와 메뉴 메이커 확장자 탭의 더블클릭 동작
+  // "팝업으로 열기" 둘 다 여기로 온다. 진짜 브라우저 창은 그 창의 "새 창으로 열기"로 연다.
+  if (popup) dfOpenHtmlPopup(it.name, url);
   else dfOpenNewTab(url, "_blank", "noopener,noreferrer");
 }
 // 요청 #141: 저장소에 올라간 .sc 파일의 실제 내용(JSON 텍스트)을 읽어서 그 안의 주소로 이동한다 -

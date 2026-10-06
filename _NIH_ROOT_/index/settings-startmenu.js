@@ -154,7 +154,7 @@ function dfsBuildSettingsBodyHtml() {
       <div class="settings-divider"></div>
       <div class="settings-row">
         <label class="settings-check"><input type="checkbox" id="setGithubLinks"> GitHub 바로가기 표시</label>
-        <div class="settings-hint">우클릭 메뉴에 "브라우저에서 보기 / 저장소에서 보기 / 브라우저에서 다운로드"를 추가로 표시합니다.</div>
+        <div class="settings-hint">우클릭 메뉴에 "raw 보기 / 저장소에서 보기 / 브라우저에서 다운로드"를 추가로 표시합니다.</div>
       </div>
       <div class="settings-divider"></div>
       <div class="settings-row">
@@ -878,7 +878,7 @@ function dfOpenPopupInApp(item, w, h) {
       '<iframe style="flex:1;min-height:0;width:100%;border:0;background:#fff;" allow="clipboard-read; clipboard-write; fullscreen"></iframe>'
   });
   const frame = handle.bodyEl.querySelector("iframe");
-  frame.src = url;
+  frame.src = item.frameSrc || url; // frameSrc: 창 안에 실제로 보여줄 주소가 따로 있을 때(raw 보기 - 받아온 내용의 blob:)
   handle.bodyEl.querySelector(".df-frame-out").onclick = () => { handle.close(); activateExternalItem(item, "realpopup"); };
   // 창을 끌거나 크기를 바꾸는 동안 마우스가 iframe 위로 지나가면 움직임이 끊긴다 - 그동안만 iframe이 마우스를 못 받게 한다.
   handle.el.addEventListener("mousedown", (e) => {
